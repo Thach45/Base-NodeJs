@@ -25,6 +25,7 @@
     "url": "https://github.com/Thach45/manage-task-typescript/issues"
   },
   "dependencies": {
+    "@google/genai": "^0.7.0",
     "axios": "^1.7.7",
     "bcryptjs": "^3.0.2",
     "body-parser": "^1.20.3",
