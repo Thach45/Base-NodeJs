@@ -45,12 +45,12 @@ export const generateMessage = async (req: Request, res: Response) => {
   const data = await anlyze();
   const ngay = new Date();
   const ngayThang = `${String(ngay.getDate()).padStart(2, '0')}/${String(ngay.getMonth() + 1).padStart(2, '0')}`;
-  const {level, mood} = data;
+  const {level} = data;
   console.log(data);
   const newAnlyze = await Anlyze.create({
     ngayThang,
     level,
-    mood,
+    
     user: id,
   
 });

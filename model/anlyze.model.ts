@@ -3,7 +3,7 @@ import mongoose, { Schema } from "mongoose";
 export interface IAnlyze extends Document {
     user: mongoose.Schema.Types.ObjectId; 
     level: number
-    mood: string;
+    
     ngay: Date;
     updatedAt: Date;
 }
@@ -11,7 +11,7 @@ const AnlyzeSchema: Schema = new Schema(
     {
         user: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
         level: { type: Number, required: true },
-        mood: { type: String, required: true },
+       
         ngay: { type: Date, required: true, default: Date.now},
     },
     {

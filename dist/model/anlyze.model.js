@@ -37,7 +37,6 @@ const mongoose_1 = __importStar(require("mongoose"));
 const AnlyzeSchema = new mongoose_1.Schema({
     user: { type: mongoose_1.default.Schema.Types.ObjectId, ref: 'User', required: true },
     level: { type: Number, required: true },
-    mood: { type: String, required: true },
     ngay: { type: Date, required: true, default: Date.now },
 }, {
     timestamps: true,

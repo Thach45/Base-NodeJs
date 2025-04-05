@@ -57,12 +57,11 @@ const generateMessage = (req, res) => __awaiter(void 0, void 0, void 0, function
     const data = yield anlyze();
     const ngay = new Date();
     const ngayThang = `${String(ngay.getDate()).padStart(2, '0')}/${String(ngay.getMonth() + 1).padStart(2, '0')}`;
-    const { level, mood } = data;
+    const { level } = data;
     console.log(data);
     const newAnlyze = yield anlyze_model_1.default.create({
         ngayThang,
         level,
-        mood,
         user: id,
     });
     console.log(newAnlyze);
