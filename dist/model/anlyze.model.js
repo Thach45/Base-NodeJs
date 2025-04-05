@@ -32,19 +32,15 @@ var __importStar = (this && this.__importStar) || (function () {
         return result;
     };
 })();
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.userRoute = void 0;
-const express_1 = __importDefault(require("express"));
-const user = __importStar(require("../controller/users.controller"));
-const APIKEY_1 = require("../middleware/APIKEY");
-const JWT_middleware_1 = require("../middleware/JWT.middleware");
-const router = express_1.default.Router();
-router.use(APIKEY_1.checkApiKey);
-router.post('/register', user.register);
-router.post('/login', user.login);
-router.post('/refresh', user.refreshToken);
-router.post('/logout', JWT_middleware_1.verifyToken, user.logout);
-exports.userRoute = router;
+const mongoose_1 = __importStar(require("mongoose"));
+const AnlyzeSchema = new mongoose_1.Schema({
+    user: { type: mongoose_1.default.Schema.Types.ObjectId, ref: 'User', required: true },
+    level: { type: Number, required: true },
+    mood: { type: String, required: true },
+    ngay: { type: Date, required: true, default: Date.now },
+}, {
+    timestamps: true,
+});
+const Anlyze = mongoose_1.default.model('Anlyze', AnlyzeSchema);
+exports.default = Anlyze;

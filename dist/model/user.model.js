@@ -37,6 +37,9 @@ const mongoose_1 = __importStar(require("mongoose"));
 const UserSchema = new mongoose_1.Schema({
     email: { type: String, required: true, unique: true },
     password: { type: String, required: true },
+    fullName: { type: String, required: true },
+    isSurvey: { type: Boolean, default: false },
+    messages: { type: mongoose_1.default.Schema.Types.ObjectId, ref: 'messages' },
     role: { type: String, enum: ['user', 'admin'], default: 'user' },
 }, {
     timestamps: true,

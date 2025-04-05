@@ -19,7 +19,8 @@ const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
 const dotenv_1 = __importDefault(require("dotenv"));
 dotenv_1.default.config();
 const register = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    const { email, password } = req.body;
+    const { fullName, email, password } = req.body;
+    console.log(req.body);
     const existEmail = yield user_model_1.default.findOne({ email }).lean();
     if (existEmail) {
         res.status(400).json({
@@ -30,6 +31,9 @@ const register = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     }
     const hashedPassword = yield bcryptjs_1.default.hash(password, 10);
     const newUser = new user_model_1.default({
+        fullName,
+        isSurvey: false,
+        information: null,
         email,
         password: hashedPassword,
         role: 'user'
@@ -40,6 +44,9 @@ const register = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
             status: 'success',
             message: 'User registered successfully',
             data: {
+                isSurvey: false,
+                information: null,
+                fullname: newUser.fullName,
                 email: newUser.email,
                 role: newUser.role,
                 createdAt: newUser.createdAt,
@@ -53,6 +60,7 @@ const register = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
             message: 'Error registering user',
             error: error.message
         });
+        console.error('Error registering user:', error);
     });
 });
 exports.register = register;
@@ -73,11 +81,15 @@ const login = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     if (auth && (yield bcryptjs_1.default.compare(password, auth.password))) {
         const accessToken = jsonwebtoken_1.default.sign({
             id: auth._id,
-            role: auth.role
+            role: auth.role,
+            fullName: auth.fullName,
+            isSurvey: auth.isSurvey,
         }, process.env.JWT_ACCESS_TOKEN, { expiresIn: '20S' });
         const refreshToken = jsonwebtoken_1.default.sign({
             id: auth._id,
-            role: auth.role
+            role: auth.role,
+            fullName: auth.fullName,
+            isSurvey: auth.isSurvey
         }, process.env.JWT_REFRESH_TOKEN, { expiresIn: '365d' });
         res.cookie('refreshToken', refreshToken, {
             httpOnly: true,
@@ -90,6 +102,8 @@ const login = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
             data: {
                 email: auth.email,
                 role: auth.role,
+                fullName: auth.fullName,
+                isSurvey: auth.isSurvey,
                 accessToken: accessToken,
             }
         });
@@ -111,11 +125,15 @@ const refreshToken = (req, res) => __awaiter(void 0, void 0, void 0, function* (
         }
         const accessToken = jsonwebtoken_1.default.sign({
             id: user.id,
-            role: user.role
+            role: user.role,
+            fullName: user.fullName,
+            isSurvey: user.isSurvey
         }, process.env.JWT_ACCESS_TOKEN, { expiresIn: '20s' });
         const newRefreshToken = jsonwebtoken_1.default.sign({
             id: user.id,
-            role: user.role
+            role: user.role,
+            fullName: user.fullName,
+            isSurvey: user.isSurvey
         }, process.env.JWT_REFRESH_TOKEN, { expiresIn: '365d' });
         res.cookie('refreshToken', newRefreshToken, {
             httpOnly: true,
