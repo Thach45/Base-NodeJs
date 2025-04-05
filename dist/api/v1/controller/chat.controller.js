@@ -12,7 +12,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.generateMessage = void 0;
+exports.getAllAnlyze = exports.generateMessage = void 0;
 const genai_1 = require("@google/genai");
 const dotenv_1 = __importDefault(require("dotenv"));
 const message_model_1 = __importDefault(require("../../../model/message.model"));
@@ -46,9 +46,15 @@ const generateMessage = (req, res) => __awaiter(void 0, void 0, void 0, function
         return __awaiter(this, void 0, void 0, function* () {
             const response = yield ai.models.generateContent({
                 model: "gemini-2.0-flash",
-                contents: `I am treating a patient with depression, the patient texted me but the following message: ${chat}. 
-      Please analyze the text and return only the following in this exact format:
-       {"level": "0-100"} Do not include any additional explanations or details.`
+                contents: `You are a mental health assistant helping a therapist analyze patient messages for emotional distress.
+
+The therapist received the following message from a patient dealing with depression:
+"${chat}"
+
+Your task is to analyze the emotional tone of this message and return a single score between 0 (completely neutral) and 100 (extremely negative).
+
+Respond strictly in this JSON format (no extra text or explanation):
+{"level": "0-100"}`
             });
             const moodAnalysis = JSON.parse(response.text);
             return moodAnalysis;
@@ -57,13 +63,19 @@ const generateMessage = (req, res) => __awaiter(void 0, void 0, void 0, function
     const data = yield anlyze();
     const ngay = new Date();
     const ngayThang = `${String(ngay.getDate()).padStart(2, '0')}/${String(ngay.getMonth() + 1).padStart(2, '0')}`;
-    const { level } = data;
-    console.log(data);
+    let { level } = data;
+    level = parseInt(level);
+    console.log(level);
     const newAnlyze = yield anlyze_model_1.default.create({
         ngayThang,
         level,
         user: id,
     });
-    console.log(newAnlyze);
 });
 exports.generateMessage = generateMessage;
+const getAllAnlyze = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const { id } = req.body;
+    const messages = yield anlyze_model_1.default.find({ user: id }).lean();
+    res.status(200).json(messages);
+});
+exports.getAllAnlyze = getAllAnlyze;
