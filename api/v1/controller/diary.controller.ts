@@ -12,7 +12,7 @@ export const analyzeParagraph = async (req: Request, res: Response) => {
   async function main() {
     const response = await ai.models.generateContent({
       model: "gemini-2.0-flash",
-      contents: "tôi đang bị các triệu chứng như đoạn prompt " +prompt+" tôi muốn bạn phân tích xem tôi có đang mắc bệnh trầm cảm hay không"
+      contents: "tôi đang bị các triệu chứng như đoạn prompt " +prompt+" tôi muốn bạn phân tích ngắn gọn ý chính xem tôi có đang mắc bệnh trầm cảm hay không. "
     });
     console.log(response.text);
     res.status(200).json({ message: response.text });
@@ -23,7 +23,4 @@ export const analyzeParagraph = async (req: Request, res: Response) => {
     id,
     { isSurvey: true }
   );
-  if (!updateUser) {
-     res.status(404).json({ message: "User not found" });
-  }
 }
