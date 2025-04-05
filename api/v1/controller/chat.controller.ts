@@ -6,67 +6,111 @@ import Anlyze from "../../../model/anlyze.model";
 dotenv.config();
 
 export const generateMessage = async (req: Request, res: Response) => {
-  const { prompt, id } = req.body;
+  try {
+    const { prompt, id } = req.body;
 
-  const ai = new GoogleGenAI({ apiKey: process.env.GOOGLE_API_KEY });
+    const ai = new GoogleGenAI({ apiKey: process.env.GOOGLE_API_KEY });
 
-  async function main() {
-    const response = await ai.models.generateContent({
-      model: "gemini-2.0-flash",
-      contents: prompt,
+    async function main() {
+      const response = await ai.models.generateContent({
+        model: "gemini-2.0-flash",
+        contents: prompt,
+      });
+      console.log(response.text);
+      res.status(200).json({ message: response.text });
+    }
+
+    main();
+
+    const newMesseage = await Message.create({
+      user: id,
+      message: prompt,
     });
-    console.log(response.text);
-    res.status(200).json({ message: response.text });
-  }
+    const messages = await Message.find({ user: id }).lean();
+    let chat = "";
+    for (const message of messages) {
+      chat += message.message + ", ";
+    }
 
-  main();
-
-  const newMesseage = await Message.create({
-    user: id,
-    message: prompt,
-  });
-  const messages = await Message.find({ user: id }).lean();
-  let chat ="'";
-  for (const message of messages) {
-    chat += message.message + ", ";
-  }
-  chat += "'";
-  async function anlyze() {
-    const response = await ai.models.generateContent({
-      model: "gemini-2.0-flash",
-      contents: `You are a mental health assistant helping a therapist analyze patient messages for emotional distress.
-
-The therapist received the following message from a patient dealing with depression:
+    async function anlyze() {
+      try {
+        const response = await ai.models.generateContent({
+          model: "gemini-2.0-flash",
+          contents: `Analyze the emotional tone of this message and return a score between 0 (neutral) and 100 (extremely negative):
 "${chat}"
 
-Your task is to analyze the emotional tone of this message and return a single score between 0 (completely neutral) and 100 (extremely negative).
+Return only a JSON object in this format:
+{"level": "50"}`
+        });
 
-Respond strictly in this JSON format (no extra text or explanation):
-{"level": "0-100"}`
+        // Đảm bảo response.text tồn tại và là string
+        if (!response.text) {
+          console.log('Empty response from AI');
+          return { level: "50" };
+        }
+
+        let jsonStr = response.text.trim();
+        
+        // Xử lý trường hợp AI trả về số trực tiếp
+        if (!isNaN(Number(jsonStr))) {
+          return { level: jsonStr };
+        }
+
+        // Tìm và trích xuất đối tượng JSON từ văn bản
+        const jsonMatch = jsonStr.match(/\{[^}]+\}/);
+        if (jsonMatch) {
+          jsonStr = jsonMatch[0];
+        } else {
+          console.log('No JSON object found in response');
+          return { level: "50" };
+        }
+
+        try {
+          const moodAnalysis = JSON.parse(jsonStr);
+          // Kiểm tra xem level có tồn tại và hợp lệ không
+          if (!moodAnalysis.level || isNaN(Number(moodAnalysis.level))) {
+            console.log('Invalid level value in response');
+            return { level: "50" };
+          }
+          return moodAnalysis;
+        } catch (parseError) {
+          console.error('JSON parse error:', parseError);
+          return { level: "50" }; // Giá trị mặc định nếu parse lỗi
+        }
+      } catch (error) {
+        console.error('Analysis error:', error);
+        return { level: "50" }; // Giá trị mặc định nếu có lỗi
+      }
+    }
+
+    const data = await anlyze();
+    const ngay = new Date();
+    const ngayThang = `${String(ngay.getDate()).padStart(2, '0')}/${String(ngay.getMonth() + 1).padStart(2, '0')}`;
+    let { level } = data;
+    level = parseInt(level);
+    console.log('Analyzed level:', level);
+    
+    const newAnlyze = await Anlyze.create({
+      ngayThang,
+      level,
+      user: id,
     });
-    const moodAnalysis = JSON.parse(response.text!);
-    return moodAnalysis;
+
+  } catch (error) {
+    console.error('Generate message error:', error);
+    res.status(500).json({ error: 'Internal server error' });
   }
-
-  const data = await anlyze();
-  const ngay = new Date();
-  const ngayThang = `${String(ngay.getDate()).padStart(2, '0')}/${String(ngay.getMonth() + 1).padStart(2, '0')}`;
-  let {level} = data;
-  level = parseInt(level);
-  console.log(level);
-  const newAnlyze = await Anlyze.create({
-    ngayThang,
-    level,
-    user: id,
-  
-});
-
-}
+};
 
 export const getAllAnlyze = async (req: Request, res: Response) => {
-  const { id } = req.body;
-  const messages = await Anlyze.find({ user: id }).lean();
-  res.status(200).json(messages);
+  try {
+    const { id } = req.body;
+    const messages = await Anlyze.find({ user: id }).lean();
+    res.status(200).json(messages);
+  } catch (error) {
+    console.error('Get analyze error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
 };
 
 
