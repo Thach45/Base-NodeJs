@@ -14,7 +14,10 @@ const app: Express = express();
 const port: number = parseInt(process.env.PORT || '3000', 10);
 
 app.use(bodyParser.json());
-app.use(cors());
+app.use(cors({
+  origin: "http://localhost:3001",  // Chỉ định frontend URL
+  credentials: true                 // Cho phép gửi credentials (cookies, headers)
+}));
 app.use(express.static('public'));
 app.use(cookieParser());
 
