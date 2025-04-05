@@ -35,18 +35,31 @@ export const generateMessage = async (req: Request, res: Response) => {
     const response = await ai.models.generateContent({
       model: "gemini-2.0-flash",
       contents: `You are a mental health assistant helping a therapist analyze patient messages for emotional distress.
-
-The therapist received the following message from a patient dealing with depression:
-"${chat}"
-
-Your task is to analyze the emotional tone of this message and return a single score between 0 (completely neutral) and 100 (extremely negative).
-
-Respond strictly in this JSON format (no extra text or explanation):
-{"level": "0-100"}`
+  
+  The therapist received the following message from a patient dealing with depression:
+  "${chat}"
+  
+  Your task is to analyze the emotional tone of this message and return a single score between 0 (completely neutral) and 100 (extremely negative).
+  
+  Respond strictly in this JSON format (no extra text or explanation):
+  {"level": "0-100"}`
     });
-    const moodAnalysis = JSON.parse(response.text!);
-    return moodAnalysis;
+  
+    // Làm sạch Markdown trước khi parse
+    let cleanText = response.text!.trim();
+    if (cleanText.startsWith("```json")) {
+      cleanText = cleanText.replace(/```json\s*/, "").replace(/```$/, "").trim();
+    }
+  
+    try {
+      const moodAnalysis = JSON.parse(cleanText);
+      return moodAnalysis;
+    } catch (err) {
+      console.error("Lỗi khi parse JSON từ Gemini:", cleanText);
+      throw new Error("Gemini trả về định dạng không hợp lệ.");
+    }
   }
+  
 
   const data = await anlyze();
   const ngay = new Date();
