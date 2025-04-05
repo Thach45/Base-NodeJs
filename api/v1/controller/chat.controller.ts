@@ -34,9 +34,15 @@ export const generateMessage = async (req: Request, res: Response) => {
   async function anlyze() {
     const response = await ai.models.generateContent({
       model: "gemini-2.0-flash",
-      contents: `I am treating a patient with depression, the patient texted me but the following message: ${chat}. 
-      Please analyze the text and return only the following in this exact format:
-       {"level": "0-100"} Do not include any additional explanations or details.`
+      contents: `You are a mental health assistant helping a therapist analyze patient messages for emotional distress.
+
+The therapist received the following message from a patient dealing with depression:
+"${chat}"
+
+Your task is to analyze the emotional tone of this message and return a single score between 0 (completely neutral) and 100 (extremely negative).
+
+Respond strictly in this JSON format (no extra text or explanation):
+{"level": "0-100"}`
     });
     const moodAnalysis = JSON.parse(response.text!);
     return moodAnalysis;
@@ -45,17 +51,24 @@ export const generateMessage = async (req: Request, res: Response) => {
   const data = await anlyze();
   const ngay = new Date();
   const ngayThang = `${String(ngay.getDate()).padStart(2, '0')}/${String(ngay.getMonth() + 1).padStart(2, '0')}`;
-  const {level} = data;
-  console.log(data);
+  let {level} = data;
+  level = parseInt(level);
+  console.log(level);
   const newAnlyze = await Anlyze.create({
     ngayThang,
     level,
-    
     user: id,
   
 });
-console.log(newAnlyze);
+
 }
+
+export const getAllAnlyze = async (req: Request, res: Response) => {
+  const { id } = req.body;
+  const messages = await Anlyze.find({ user: id }).lean();
+  res.status(200).json(messages);
+};
+
 
 
 
