@@ -24,7 +24,7 @@ const analyzeParagraph = (req, res) => __awaiter(void 0, void 0, void 0, functio
         return __awaiter(this, void 0, void 0, function* () {
             const response = yield ai.models.generateContent({
                 model: "gemini-2.0-flash",
-                contents: "tôi đang bị các triệu chứng như đoạn prompt " + prompt + " tôi muốn bạn phân tích xem tôi có đang mắc bệnh trầm cảm hay không"
+                contents: "tôi đang bị các triệu chứng như đoạn prompt " + prompt + " tôi muốn bạn phân tích ngắn gọn ý chính xem tôi có đang mắc bệnh trầm cảm hay không. "
             });
             console.log(response.text);
             res.status(200).json({ message: response.text });
@@ -32,8 +32,5 @@ const analyzeParagraph = (req, res) => __awaiter(void 0, void 0, void 0, functio
     }
     main();
     const updateUser = yield user_model_1.default.findByIdAndUpdate(id, { isSurvey: true });
-    if (!updateUser) {
-        res.status(404).json({ message: "User not found" });
-    }
 });
 exports.analyzeParagraph = analyzeParagraph;
