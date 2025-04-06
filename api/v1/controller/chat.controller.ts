@@ -6,35 +6,27 @@ import Anlyze from "../../../model/anlyze.model";
 dotenv.config();
 
 export const generateMessage = async (req: Request, res: Response) => {
-  const { prompt, id } = req.body;
+  try {
+    const { prompt, id } = req.body;
+    const ai = new GoogleGenAI({ apiKey: process.env.GOOGLE_API_KEY });
 
-  const ai = new GoogleGenAI({ apiKey: process.env.GOOGLE_API_KEY });
+    // 1. Tạo message mới
+    await Message.create({ user: id, message: prompt });
 
-  async function main() {
-    const response = await ai.models.generateContent({
+    // 2. Lấy toàn bộ message của user
+    const messages = await Message.find({ user: id }).lean();
+    let chat = messages.map(m => m.message).join(", ");
+
+    // 3. Gửi prompt tới AI để sinh phản hồi
+    const reply = await ai.models.generateContent({
       model: "gemini-2.0-flash",
-      contents: prompt,
+      contents: prompt
     });
-    console.log(response.text);
-    res.status(200).json({ message: response.text });
-  }
 
-  main();
+    const aiMessage = reply.text || "Xin lỗi, mình không hiểu ý bạn.";
 
-  const newMesseage = await Message.create({
-    user: id,
-    message: prompt,
-  });
-  const messages = await Message.find({ user: id }).lean();
-  let chat ="'";
-  for (const message of messages) {
-    chat += message.message + ", ";
-  }
-  chat += "'";
-  async function anlyze() {
-    const response = await ai.models.generateContent({
-      model: "gemini-2.0-flash",
-      contents: `You are a mental health assistant helping a therapist analyze patient messages for emotional distress.
+    // 4. Gửi prompt tới AI để phân tích cảm xúc
+    const analyzePrompt = `You are a mental health assistant helping a therapist analyze patient messages for emotional distress.
 
 The therapist received the following message from a patient dealing with depression:
 "${chat}"
@@ -42,26 +34,47 @@ The therapist received the following message from a patient dealing with depress
 Your task is to analyze the emotional tone of this message and return a single score between 0 (completely neutral) and 100 (extremely negative).
 
 Respond strictly in this JSON format (no extra text or explanation):
-{"level": "0-100"}`
+{"level": "0-100"}`;
+
+    const analysisResponse = await ai.models.generateContent({
+      model: "gemini-2.0-flash",
+      contents: analyzePrompt
     });
-    const moodAnalysis = JSON.parse(response.text!);
-    return moodAnalysis;
+
+    // 5. Xử lý JSON trả về
+    const rawText = analysisResponse.text!;
+    const match = rawText.match(/{\s*"level"\s*:\s*"\d{1,3}"\s*}/);
+
+    if (!match) {
+      throw new Error("Phân tích cảm xúc trả về sai định dạng JSON");
+    }
+
+    const { level } = JSON.parse(match[0]);
+    const levelNumber = parseInt(level);
+
+    // 6. Lưu vào DB
+    const now = new Date();
+    const ngayThang = `${String(now.getDate()).padStart(2, '0')}/${String(now.getMonth() + 1).padStart(2, '0')}`;
+
+    await Anlyze.create({
+      user: id,
+      level: levelNumber,
+      ngayThang,
+    });
+
+    // 7. Trả về kết quả
+    res.status(200).json({
+      message: aiMessage,
+      level: levelNumber,
+      ngayThang
+    });
+
+  } catch (error) {
+    console.error("Error in generateMessage:", error);
+    res.status(500).json({ message: "Internal server error" });
   }
+};
 
-  const data = await anlyze();
-  const ngay = new Date();
-  const ngayThang = `${String(ngay.getDate()).padStart(2, '0')}/${String(ngay.getMonth() + 1).padStart(2, '0')}`;
-  let {level} = data;
-  level = parseInt(level);
-  console.log(level);
-  const newAnlyze = await Anlyze.create({
-    ngayThang,
-    level,
-    user: id,
-  
-});
-
-}
 
 export const getAllAnlyze = async (req: Request, res: Response) => {
   const { id } = req.body;
